@@ -3,6 +3,9 @@ import shutil
 import subprocess
 import sys
 
+# Suppress console windows when spawning child processes in the frozen Windows build
+_W32 = {'creationflags': subprocess.CREATE_NO_WINDOW} if sys.platform == 'win32' else {}
+
 TOOLS = ["fls", "icat", "ewfinfo", "7z", "ffmpeg"]
 
 # Local bin folder (next to project root): ../bin relative to this script
@@ -34,7 +37,7 @@ def check_tool(tool):
     local = _find_local_tool(tool)
     if local:
         try:
-            proc = subprocess.run([local, "--version"], capture_output=True, text=True, timeout=5)
+            proc = subprocess.run([local, "--version"], capture_output=True, text=True, timeout=5, **_W32)
             out = proc.stdout.strip() or proc.stderr.strip()
             return True, local, out.splitlines()[0] if out else "(local binary)"
         except Exception:
@@ -44,7 +47,7 @@ def check_tool(tool):
     path = shutil.which(tool)
     if path:
         try:
-            proc = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+            proc = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5, **_W32)
             out = proc.stdout.strip() or proc.stderr.strip()
             return True, path, out.splitlines()[0] if out else "(no version output)"
         except Exception:

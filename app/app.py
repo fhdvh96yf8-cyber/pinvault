@@ -2,6 +2,9 @@ import os
 import sys
 import shutil
 import subprocess
+
+# Suppress console windows when spawning child processes in the frozen Windows build
+_W32 = {'creationflags': subprocess.CREATE_NO_WINDOW} if sys.platform == 'win32' else {}
 from PySide6.QtWidgets import (
     QApplication,
     QWidget,
@@ -173,7 +176,7 @@ def run_fls(image_path, offset: int = 0):
 
     if APP_VERBOSE:
         print(f"[app.run_fls] exec: {cmd}")
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, **_W32)
     if APP_VERBOSE:
         print(f"[app.run_fls] rc={proc.returncode} stdout_len={len(proc.stdout or '')} stderr_len={len(proc.stderr or '')}")
     if proc.returncode != 0 and not proc.stdout:

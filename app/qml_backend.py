@@ -1,11 +1,15 @@
 from PySide6.QtCore import QObject, Signal, Slot, QRunnable, QThreadPool, QUrl
 import subprocess
+import sys
 import os
 import tempfile
 import json
 import time
 import threading
 import urllib.parse
+
+# Suppress console windows when spawning child processes in the frozen Windows build
+_W32 = {'creationflags': subprocess.CREATE_NO_WINDOW} if sys.platform == 'win32' else {}
 
 from app.app import find_tool, run_fls
 try:
@@ -39,7 +43,7 @@ class ScanRunnable(QRunnable):
             mmls = find_tool('mmls')
             if mmls:
                 try:
-                    p = subprocess.run([mmls, self.image_path], capture_output=True, text=True)
+                    p = subprocess.run([mmls, self.image_path], capture_output=True, text=True, **_W32)
                     for ln in p.stdout.splitlines():
                         ln = ln.strip()
                         if not ln or 'Unallocated' in ln or 'Meta' in ln or ln.startswith('------'):
@@ -173,7 +177,7 @@ class ThumbRunnable(QRunnable):
                 cmd += ['-o', str(off)]
             cmd += [self.backend.current_image, str(inode)]
             with open(tmpfile, 'wb') as out:
-                proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE)
+                proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE, **_W32)
                 if proc.returncode != 0:
                     try:
                         self.backend.thumbnailReady.emit(fi_uid, '', False, '')
@@ -193,7 +197,7 @@ class ThumbRunnable(QRunnable):
                 try:
                     p = subprocess.run(
                         [ffprobe, '-v', 'error', '-show_streams', '-show_format', '-print_format', 'json', tmpfile],
-                        capture_output=True, text=True
+                        capture_output=True, text=True, **_W32
                     )
                     if p.returncode == 0 and p.stdout:
                         info = json.loads(p.stdout)
@@ -247,7 +251,7 @@ class ThumbRunnable(QRunnable):
                         """Extract one frame at seek position ss into dst; return True on success."""
                         return subprocess.run(
                             [ffmpeg, '-y', '-ss', ss, '-i', src, '-frames:v', '1', dst],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, **_W32
                         ).returncode == 0 and os.path.exists(dst)
 
                     ok = _extract_frame(tmpfile, thumbfile, seek_str)
@@ -353,7 +357,7 @@ class PreviewRunnable(QRunnable):
                 cmd += ['-o', str(off)]
             cmd += [self.backend.current_image, str(inode)]
             with open(outpath, 'wb') as f:
-                proc = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE)
+                proc = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, **_W32)
             if proc.returncode == 0 and os.path.exists(outpath) and os.path.getsize(outpath) > 0:
                 self.backend._preview_files.add(outpath)
                 self.backend.previewReady.emit(uid, outpath)
@@ -712,7 +716,7 @@ class Backend(QObject):
                     cmd += ['-o', str(off)]
                 cmd += [self.current_image, str(inode)]
                 with open(outpath, 'wb') as f:
-                    proc = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE)
+                    proc = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, **_W32)
                 if proc.returncode == 0 and os.path.exists(outpath):
                     self.exportFinished.emit(outpath)
                 else:
@@ -736,7 +740,7 @@ class Backend(QObject):
                 icat = find_tool('icat')
                 if not icat or inode is None:
                     if os.name == 'nt':
-                        subprocess.Popen(['explorer', tempfile.gettempdir()])
+                        subprocess.Popen(['explorer', tempfile.gettempdir()], **_W32)
                     return
                 tmpdir = tempfile.gettempdir()
                 fname = os.path.basename(orig_path).replace(' ', '_') or f'asset_{inode}'
@@ -747,9 +751,9 @@ class Backend(QObject):
                         cmd += ['-o', str(off)]
                     cmd += [self.current_image, str(inode)]
                     with open(outpath, 'wb') as f:
-                        subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE)
+                        subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, **_W32)
                 if os.name == 'nt':
-                    subprocess.Popen(['explorer', f'/select,{outpath}'])
+                    subprocess.Popen(['explorer', f'/select,{outpath}'], **_W32)
             except Exception:
                 pass
         threading.Thread(target=_run, daemon=True).start()
@@ -787,7 +791,7 @@ class Backend(QObject):
             cmd += [self.current_image, str(inode)]
             try:
                 with open(outpath, 'wb') as out:
-                    proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE)
+                    proc = subprocess.run(cmd, stdout=out, stderr=subprocess.PIPE, **_W32)
                     if proc.returncode != 0:
                         try:
                             if getattr(self, 'verbose', False):
@@ -817,7 +821,7 @@ class Backend(QObject):
                     # fallback: use xdg-open or open
                     opener = 'xdg-open' if os.name == 'posix' else None
                     if opener:
-                        subprocess.Popen([opener, outpath])
+                        subprocess.Popen([opener, outpath], **_W32)
             except Exception as e:
                 if getattr(self, 'verbose', False):
                     print(f"[backend] openAsset: failed to open extracted file: {e}")
