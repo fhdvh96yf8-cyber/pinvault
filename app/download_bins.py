@@ -137,13 +137,19 @@ def ensure_bin_dir():
 
 
 def main():
+    # Support --yes / -y flag for non-interactive CI environments
+    auto_yes = "--yes" in sys.argv or "-y" in sys.argv
+
     print("This will attempt to download recommended SleuthKit/ewf binaries into:")
     print("  ", BIN_DIR)
     print("Review the URLs in app/download_bins.py before proceeding.")
-    ans = input("Proceed with download? [y/N]: ").strip().lower()
-    if ans != "y":
-        print("Aborted by user.")
-        sys.exit(1)
+    if auto_yes:
+        print("Proceeding automatically (--yes flag set).")
+    else:
+        ans = input("Proceed with download? [y/N]: ").strip().lower()
+        if ans != "y":
+            print("Aborted by user.")
+            sys.exit(1)
 
     ensure_bin_dir()
 
