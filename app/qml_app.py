@@ -8,7 +8,7 @@ from PySide6.QtGui import QIcon
 # Tell Windows this is its own app (not python.exe) so taskbar shows our icon
 try:
     import ctypes
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("SternPinball.PinVault.1")
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("PinVault.App.1")
 except Exception:
     pass
 

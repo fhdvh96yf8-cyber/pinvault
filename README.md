@@ -1,6 +1,6 @@
 ﻿# PinVault
 
-A Windows desktop app for browsing and extracting media assets from Stern Pinball SD card images (`.raw` / forensic disk images).
+A Windows desktop app for browsing and extracting media assets from pinball machine SD card images (`.raw` / forensic disk images).
 
 Built with Python + PySide6 + QML. Uses SleuthKit (`icat`, `fls`, `mmls`) for filesystem forensics and ffmpeg for thumbnail generation and video preview.
 

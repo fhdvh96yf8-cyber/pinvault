@@ -517,11 +517,22 @@ class Backend(QObject):
 
     @Slot()
     def dismountImage(self):
-        """Clear current image and remove all session temp files."""
+        """Clear current image and remove all session temp files and thumbcache."""
         self.current_image = ''
         self._thumbs_total = 0
         self._thumbs_done  = 0
         self.cleanupThumbnails()
+        # Clear the persistent thumbnail cache for this image
+        try:
+            cache_dir = self._thumb_cache_dir()
+            for name in os.listdir(cache_dir):
+                if name.endswith('.jpg') or name.endswith('.meta'):
+                    try:
+                        os.remove(os.path.join(cache_dir, name))
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         for p in list(self._preview_files):
             try:
                 if os.path.exists(p):

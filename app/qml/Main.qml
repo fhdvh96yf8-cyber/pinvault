@@ -599,6 +599,8 @@ ApplicationWindow {
                     preventStealing: grid.rbDragging
 
                     onPressed: function(mouse) {
+                        // Ignore presses inside the scrollbar zone (right ~12 px)
+                        if (mouse.x >= parent.width - 12) { mouse.accepted = false; return }
                         // Only start rubber-band when pressing on empty space
                         var cellUnder = grid.itemAt(mouse.x, mouse.y + grid.contentY)
                         if (cellUnder) { mouse.accepted = false; return }
