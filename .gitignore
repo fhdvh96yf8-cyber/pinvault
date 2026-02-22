@@ -31,6 +31,7 @@ extracted_*
 
 # Backup dirs created by download_bins.py
 bin/_sleuthkit_backup_*/
+bin/_sleuthkit_static_backup_*/
 
 # IDE
 .vscode/settings.json

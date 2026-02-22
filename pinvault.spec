@@ -13,10 +13,26 @@ block_cipher = None
 _here  = os.path.dirname(os.path.abspath(SPEC))   # project root
 _bindir = os.path.join(_here, 'bin')
 _bin_datas = []
+
+# File extensions that are dev-only artifacts and not needed at runtime
+_SKIP_EXTS  = {'.lib', '.a', '.def', '.h', '.pc', '.pl', '.html', '.css'}
+# ffmpeg ships doc/, include/, lib/, presets/ — runtime only needs bin/
+_SKIP_DIRS  = {'doc', 'include', 'lib', 'presets'}
+# executables we never call
+_SKIP_FILES = {'ffplay.exe'}
+
 for _root, _dirs, _files in os.walk(_bindir):
-    # Skip leftover backup directories
-    _dirs[:] = [d for d in _dirs if not d.startswith('_sleuthkit_backup')]
+    # Skip backup directories and non-runtime ffmpeg subdirectories
+    _dirs[:] = [
+        d for d in _dirs
+        if not d.startswith('_sleuthkit_backup')
+        and not d.startswith('_sleuthkit_static_backup')
+        and d.lower() not in _SKIP_DIRS
+    ]
     for _f in _files:
+        _ext = os.path.splitext(_f)[1].lower()
+        if _ext in _SKIP_EXTS or _f.lower() in _SKIP_FILES:
+            continue
         _src = os.path.join(_root, _f)
         # dest path relative to _MEIPASS root, preserving subdirectory structure
         _rel = os.path.relpath(os.path.dirname(_src), _here)

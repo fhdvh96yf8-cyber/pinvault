@@ -41,9 +41,9 @@ CANDIDATES = {
         "type": "exe",
     },
     "ffmpeg": {
-        "display": "FFmpeg (ffmpeg.exe)",
+        "display": "FFmpeg (ffmpeg.exe, ffprobe.exe) — LGPL",
         "repo": "BtbN/FFmpeg-Builds",
-        "asset_hint": "win64",
+        "asset_hint": "win64-lgpl-shared",
         "type": "zip",
     },
 }
