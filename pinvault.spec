@@ -105,10 +105,28 @@ _EXCLUDE_DLL_PREFIXES = (
     'qt6texttospeech', 'qt6test', 'qt6help', 'qt6uitools',
     'qt6printsupport', 'qt6openglwidgets',
     'opengl32sw',       # 20 MB software OpenGL fallback — not needed on modern Windows
-    # NOTE: avcodec-62 / avfilter-11 / avformat-62 / avdevice-62 are kept here
-    # because PyInstaller moves DLLs from datas→binaries; filtering them would
-    # also strip the co-located copies that ffmpeg.exe depends on at runtime.
+    # ffmpeg DLLs are large and get duplicated at the bundle root by PyInstaller's
+    # PE scanner.  We filter them here, then re-add them to a.datas below so they
+    # land only in bin/ffmpeg.../bin/ where ffmpeg.exe can find them.
+    'avfilter-', 'avcodec-62', 'avformat-', 'avdevice-',
+    # PySide6 ships its own avcodec-61.dll (different major version) — NOT filtered.
 )
+a.binaries = TOC([
+    (name, path, typecode)
+    for (name, path, typecode) in a.binaries
+    if not os.path.basename(name).lower().startswith(_EXCLUDE_DLL_PREFIXES)
+])
+
+# Re-anchor the filtered ffmpeg DLLs back into the correct subdirectory so that
+# ffmpeg.exe (a subprocess call) can load them via the standard DLL search path.
+_ffmpeg_bin_src = os.path.join(_bindir, 'ffmpeg-master-latest-win64-lgpl-shared', 'bin')
+_ffmpeg_bin_dst = os.path.join('bin', 'ffmpeg-master-latest-win64-lgpl-shared', 'bin')
+_reanchor_dlls = ['avfilter-11.dll', 'avcodec-62.dll', 'avformat-62.dll', 'avdevice-62.dll']
+for _dll in _reanchor_dlls:
+    _src = os.path.join(_ffmpeg_bin_src, _dll)
+    if os.path.exists(_src):
+        # TOC entry: (dest_relative_to_MEIPASS, source_path, typecode)
+        a.datas.append((os.path.join(_ffmpeg_bin_dst, _dll), _src, 'DATA'))
 a.binaries = TOC([
     (name, path, typecode)
     for (name, path, typecode) in a.binaries
