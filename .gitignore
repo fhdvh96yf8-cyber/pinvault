@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# PyInstaller output
+dist/
+build/
+
+# User data / generated at runtime
+app/settings.json
+app/thumb_cache/
+images/
+extracted_*
+
+# Large SD card images (never commit these)
+*.raw
+*.img
+*.sdcard
+
+# Backup dirs created by download_bins.py
+bin/_sleuthkit_backup_*/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini

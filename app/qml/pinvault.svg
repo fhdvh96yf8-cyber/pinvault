@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <!-- Ball gradient: classic silver pinball look -->
+    <radialGradient id="ball" cx="38%" cy="32%" r="60%">
+      <stop offset="0%"   stop-color="#f0f0ff"/>
+      <stop offset="40%"  stop-color="#b0b0cc"/>
+      <stop offset="80%"  stop-color="#6868a0"/>
+      <stop offset="100%" stop-color="#38385a"/>
+    </radialGradient>
+    <!-- Blue glow under ball -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#3377ff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#3377ff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- SD card face -->
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#252535"/>
+      <stop offset="100%" stop-color="#1a1a28"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App tile background -->
+  <rect width="256" height="256" rx="44" fill="#0d0d18"/>
+
+  <!-- SD card body (centred, bottom-weighted) -->
+  <path d="M 82 60
+             L 82 200
+             L 174 200
+             L 174 60
+             L 148 60
+             L 135 47
+             L 122 47
+             L 109 60
+             Z"
+        fill="url(#card)" stroke="#333346" stroke-width="1.5"/>
+
+  <!-- SD card top bevel cut-corners -->
+  <path d="M 109 60 L 82 60 M 148 60 L 174 60" stroke="#444458" stroke-width="1" fill="none"/>
+
+  <!-- SD card connector pins (bottom) -->
+  <rect x="96"  y="172" width="10" height="22" rx="3" fill="#4a4a65" opacity="0.9"/>
+  <rect x="113" y="172" width="10" height="22" rx="3" fill="#4a4a65" opacity="0.9"/>
+  <rect x="130" y="172" width="10" height="22" rx="3" fill="#4a4a65" opacity="0.9"/>
+  <rect x="147" y="172" width="10" height="22" rx="3" fill="#4a4a65" opacity="0.9"/>
+
+  <!-- Label area inside card (subtle) -->
+  <rect x="92" y="80" width="72" height="78" rx="6" fill="#1c1c2c" opacity="0.6"/>
+
+  <!-- Glow halo behind ball -->
+  <circle cx="128" cy="128" r="62" fill="url(#glow)"/>
+
+  <!-- Pinball sphere -->
+  <circle cx="128" cy="122" r="52" fill="url(#ball)"/>
+
+  <!-- Ball specular highlight (top-left) -->
+  <ellipse cx="112" cy="104" rx="16" ry="10" fill="white" opacity="0.22" transform="rotate(-20 112 104)"/>
+
+  <!-- Ball rim shadow -->
+  <circle cx="128" cy="122" r="52" fill="none" stroke="#252540" stroke-width="2"/>
+</svg>

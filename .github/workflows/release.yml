@@ -1,0 +1,67 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:   # allow manual trigger from GitHub UI
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller Pillow cairosvg
+
+      - name: Download binary tools (SleuthKit, ffmpeg)
+        run: python app/download_bins.py --yes
+        continue-on-error: false   # fail fast if bins are missing
+
+      - name: Convert SVG icon to ICO
+        run: |
+          python - <<'EOF'
+          import cairosvg, io, sys
+          from PIL import Image
+          png = cairosvg.svg2png(url='app/qml/pinvault.svg', output_width=256, output_height=256)
+          img = Image.open(io.BytesIO(png)).convert('RGBA')
+          sizes = [(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)]
+          imgs  = [img.resize(s, Image.LANCZOS) for s in sizes]
+          imgs[0].save('app/qml/pinvault.ico', format='ICO', sizes=sizes, append_images=imgs[1:])
+          print('ICO created')
+          EOF
+        continue-on-error: true   # skip icon if conversion fails
+
+      - name: Build with PyInstaller
+        run: pyinstaller pinvault.spec --noconfirm
+
+      - name: Verify executable exists
+        run: Test-Path dist\PinVault\PinVault.exe
+
+      - name: Create ZIP archive
+        run: Compress-Archive -Path dist\PinVault -DestinationPath dist\PinVault-windows.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PinVault-windows
+          path: dist\PinVault-windows.zip
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist\PinVault-windows.zip
+          generate_release_notes: true
