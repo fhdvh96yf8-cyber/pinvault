@@ -135,6 +135,15 @@ a.binaries = TOC([
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# ── Explicitly include Qt6MultimediaQuick.dll ────────────────────────────────
+# This DLL registers AudioOutput / MediaPlayer / VideoOutput as QML types.
+# PyInstaller's PE scanner never discovers it because no Python code imports it —
+# the Qt QML engine loads it dynamically at runtime when those types appear in QML.
+_pyside6_dir = os.path.dirname(__import__('PySide6').__file__)
+_mmquick_dll = os.path.join(_pyside6_dir, 'Qt6MultimediaQuick.dll')
+if os.path.exists(_mmquick_dll):
+    a.binaries += TOC([('Qt6MultimediaQuick.dll', _mmquick_dll, 'BINARY')])
+
 exe = EXE(
     pyz,
     a.scripts,
