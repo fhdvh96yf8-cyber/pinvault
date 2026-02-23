@@ -33,6 +33,7 @@ jobs:
         continue-on-error: false   # fail fast if bins are missing
 
       - name: Convert SVG icon to ICO
+        shell: bash
         run: |
           python - <<'EOF'
           import cairosvg, io, sys
