@@ -19,6 +19,7 @@ ApplicationWindow {
     property string filterText:     ""
     property bool imageLoaded:      false
     property bool hideUnthumbnailed: false
+    property string mediaFilter:    "All"  // "All" | "Video" | "Images"
     // progress tracking — bound directly into the progress bar fill width
     property int  thumbTotal: 1
     property int  thumbCount: 0
@@ -29,12 +30,20 @@ ApplicationWindow {
     // selectedItem already declared above — used by context menu / preview
 
     // ── Helpers ───────────────────────────────────────────────────
+    function isVideoItem(item) {
+        var ext = (item.detectedExt && item.detectedExt.length) ? item.detectedExt.toLowerCase() : ""
+        if (!ext && item.path) { var p = item.path.split('.'); ext = "." + p[p.length - 1].toLowerCase() }
+        return [".jpg",".jpeg",".png",".gif",".bmp",".webp",".tiff",".svg"].indexOf(ext) === -1
+    }
+
     function rebuildModel() {
         var q = filterText.toLowerCase()
         grid.model.clear()
         for (var i = 0; i < allItems.length; i++) {
             var it = allItems[i]
             if (win.hideUnthumbnailed && !it.thumbUrl) continue
+            if (win.mediaFilter === "Video"  && !win.isVideoItem(it)) continue
+            if (win.mediaFilter === "Images" &&  win.isVideoItem(it)) continue
             if (!q || it.title.toLowerCase().indexOf(q) !== -1)
                 grid.model.append(it)
         }
@@ -116,6 +125,7 @@ ApplicationWindow {
 
     // ── Keyboard shortcuts ────────────────────────────────────────
     Shortcut { sequence: "Escape"; onActivated: { previewPopup.close(); contextMenu.close() } }
+    Shortcut { sequence: "Ctrl+A"; onActivated: { if (win.imageLoaded) win.selectAll() } }
     Shortcut { sequence: "Return"; onActivated: { if (selectedItem) backend.openAsset(JSON.stringify({ path: selectedItem.path, inode: selectedItem.inode, offset: selectedItem.offset })) } }
     Shortcut { sequence: "Right";  onActivated: selectItem(Math.min(selectedIndex + 1, grid.model.count - 1)) }
     Shortcut { sequence: "Left";   onActivated: selectItem(Math.max(selectedIndex - 1, 0)) }
@@ -463,6 +473,20 @@ ApplicationWindow {
                                     radius: 8
                                     color: "#111"
                                     border.color: "#222"
+                                }
+
+                                // Loading pulse — animated shimmer while thumbnail hasn't loaded yet
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: 8
+                                    color: "#242638"
+                                    visible: !thumbUrl || thumbUrl.length === 0
+                                    SequentialAnimation on opacity {
+                                        running: !thumbUrl || thumbUrl.length === 0
+                                        loops: Animation.Infinite
+                                        NumberAnimation { to: 0.35; duration: 900; easing.type: Easing.InOutSine }
+                                        NumberAnimation { to: 0.9;  duration: 900; easing.type: Easing.InOutSine }
+                                    }
                                 }
 
                                 // Selection ring — sits on the thumb itself, not the cell
@@ -954,7 +978,7 @@ ApplicationWindow {
         id: settingsPopup
         x: parent.width / 2 - width / 2
         y: parent.height / 2 - height / 2
-        width: 420; height: 220
+        width: 420; height: 290
         modal: true
         background: Rectangle { color: "#121212"; radius: 8 }
 
@@ -972,6 +996,29 @@ ApplicationWindow {
                 spacing: 8
                 CheckBox { id: saveAssetAsMp4 }
                 Label { text: "Save .asset as .mp4 on export"; color: "#ccc" }
+            }
+            // Media type filter
+            RowLayout {
+                spacing: 4
+                Layout.fillWidth: true
+                Label { text: "Show:"; color: "#aaa"; rightPadding: 4 }
+                ButtonGroup { id: mediaFilterGroup }
+                Repeater {
+                    model: ["All", "Video", "Images"]
+                    RadioButton {
+                        text: modelData
+                        checked: win.mediaFilter === modelData
+                        ButtonGroup.group: mediaFilterGroup
+                        contentItem: Text {
+                            text: parent.text
+                            color: parent.checked ? "#fff" : "#888"
+                            leftPadding: parent.indicator.width + 4
+                            font.pointSize: 9
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: { win.mediaFilter = modelData; win.rebuildModel() }
+                    }
+                }
             }
             RowLayout {
                 Layout.fillWidth: true
@@ -1058,8 +1105,12 @@ ApplicationWindow {
             for (var i = 0; i < grid.model.count; i++) {
                 var it = grid.model.get(i)
                 if (it.uid === uid) {
-                    if (url === "" && win.hideUnthumbnailed) {
-                        // remove items that got no thumbnail when setting is active
+                    var shouldRemove = (url === "" && win.hideUnthumbnailed)
+                    if (!shouldRemove && win.mediaFilter !== "All") {
+                        var isVid = win.isVideoItem({ detectedExt: detectedExt, path: it.path })
+                        shouldRemove = (win.mediaFilter === "Video" && !isVid) || (win.mediaFilter === "Images" && isVid)
+                    }
+                    if (shouldRemove) {
                         grid.model.remove(i, 1)
                     } else {
                         grid.model.set(i, {
@@ -1086,6 +1137,7 @@ ApplicationWindow {
             scanningProgress.visible = false
             progressLabel.visible    = true
             progressLabel.text = "Scan complete — " + win.allItems.length + " files"
+            if (win.mediaFilter !== "All") win.rebuildModel()
         }
 
         function onScanError(msg) {
@@ -1095,7 +1147,7 @@ ApplicationWindow {
         }
 
         function onExportFinished(destPath) {
-            progressLabel.text    = "Exported → " + destPath
+            progressLabel.text    = "Exported → " + destPath.replace(/\//g, "\\")
             progressLabel.visible = true
         }
 
