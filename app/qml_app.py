@@ -41,8 +41,24 @@ def _setup_error_log():
             pass
 
 
+def _install_qt_logger():
+    """Route Qt/QML log messages to Python stderr (which in frozen builds → the error log)."""
+    from PySide6.QtCore import qInstallMessageHandler, QtMsgType
+    def _handler(msg_type, context, message):
+        level = {
+            QtMsgType.QtDebugMsg:    'DBG',
+            QtMsgType.QtInfoMsg:     'INF',
+            QtMsgType.QtWarningMsg:  'WRN',
+            QtMsgType.QtCriticalMsg: 'CRT',
+            QtMsgType.QtFatalMsg:    'FAT',
+        }.get(msg_type, '???')
+        print(f'[Qt/{level}] {message}', flush=True)
+    qInstallMessageHandler(_handler)
+
+
 def main():
     _setup_error_log()
+    _install_qt_logger()
     app = QApplication(sys.argv)
     # Set app icon (taskbar + window chrome)
     _icon_path = os.path.join(SCRIPT_DIR, 'qml', 'pinvault.svg')

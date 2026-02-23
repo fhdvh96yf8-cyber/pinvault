@@ -108,8 +108,12 @@ _EXCLUDE_DLL_PREFIXES = (
     # ffmpeg DLLs are large and get duplicated at the bundle root by PyInstaller's
     # PE scanner.  We filter them here, then re-add them to a.datas below so they
     # land only in bin/ffmpeg.../bin/ where ffmpeg.exe can find them.
-    'avfilter-', 'avcodec-62', 'avformat-', 'avdevice-',
-    # PySide6 ships its own avcodec-61.dll (different major version) — NOT filtered.
+    # IMPORTANT: patterns must be version-specific (suffix -62/-11) so we don't
+    # accidentally strip PySide6's own av*-61.dll files (e.g. avformat-61.dll)
+    # that ffmpegmediaplugin.dll links against — stripping those causes
+    # "No QtMultimedia backends found" and a black screen on video playback.
+    'avfilter-11', 'avcodec-62', 'avformat-62', 'avdevice-62',
+    # PySide6 ships its own avcodec-61.dll / avformat-61.dll etc. — NOT filtered.
 )
 a.binaries = TOC([
     (name, path, typecode)
