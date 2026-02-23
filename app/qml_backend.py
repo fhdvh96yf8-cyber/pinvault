@@ -721,7 +721,13 @@ class Backend(QObject):
                     fname = stem + detected_ext
                 else:
                     fname = base
+                # Silently resolve duplicate filenames by appending _2, _3, …
+                out_stem, out_ext = os.path.splitext(fname)
                 outpath = os.path.join(local_dest, fname)
+                counter = 2
+                while os.path.exists(outpath):
+                    outpath = os.path.join(local_dest, f'{out_stem}_{counter}{out_ext}')
+                    counter += 1
                 cmd = [icat]
                 if off and off > 0:
                     cmd += ['-o', str(off)]

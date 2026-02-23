@@ -730,6 +730,7 @@ ApplicationWindow {
         MediaPlayer {
             id: mediaPlayer
             videoOutput: videoOut
+            audioOutput: AudioOutput {}
         }
 
         ColumnLayout {
