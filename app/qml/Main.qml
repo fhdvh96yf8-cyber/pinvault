@@ -9,6 +9,8 @@ ApplicationWindow {
     id: win
     width: 1200
     height: 800
+    minimumWidth: 600
+    minimumHeight: 400
     visible: true
     flags: Qt.Window | Qt.FramelessWindowHint
     title: "PinVault"
@@ -131,6 +133,35 @@ ApplicationWindow {
     Shortcut { sequence: "Left";   onActivated: selectItem(Math.max(selectedIndex - 1, 0)) }
     Shortcut { sequence: "Down";   onActivated: selectItem(Math.min(selectedIndex + grid.columns, grid.model.count - 1)) }
     Shortcut { sequence: "Up";     onActivated: selectItem(Math.max(selectedIndex - grid.columns, 0)) }
+
+    // ── Edge / corner resize handles (frameless window) ───────────────────
+    Repeater {
+        model: [
+            { ex: 0,              ey: 0,              ew: 6,            eh: 6,            edge: Qt.TopEdge    | Qt.LeftEdge  },
+            { ex: win.width - 6,  ey: 0,              ew: 6,            eh: 6,            edge: Qt.TopEdge    | Qt.RightEdge },
+            { ex: 0,              ey: win.height - 6, ew: 6,            eh: 6,            edge: Qt.BottomEdge | Qt.LeftEdge  },
+            { ex: win.width - 6,  ey: win.height - 6, ew: 6,            eh: 6,            edge: Qt.BottomEdge | Qt.RightEdge },
+            { ex: 6,              ey: 0,              ew: win.width-12, eh: 4,            edge: Qt.TopEdge    },
+            { ex: 6,              ey: win.height - 4, ew: win.width-12, eh: 4,            edge: Qt.BottomEdge },
+            { ex: 0,              ey: 6,              ew: 4,            eh: win.height-12, edge: Qt.LeftEdge   },
+            { ex: win.width - 4,  ey: 6,              ew: 4,            eh: win.height-12, edge: Qt.RightEdge  }
+        ]
+        MouseArea {
+            parent: win.contentItem
+            x: modelData.ex; y: modelData.ey
+            width: modelData.ew; height: modelData.eh
+            cursorShape: {
+                var e = modelData.edge
+                var TL = Qt.TopEdge|Qt.LeftEdge, TR = Qt.TopEdge|Qt.RightEdge
+                var BL = Qt.BottomEdge|Qt.LeftEdge, BR = Qt.BottomEdge|Qt.RightEdge
+                if (e === TL || e === BR) return Qt.SizeFDiagCursor
+                if (e === TR || e === BL) return Qt.SizeBDiagCursor
+                if (e === Qt.LeftEdge || e === Qt.RightEdge) return Qt.SizeHorCursor
+                return Qt.SizeVerCursor
+            }
+            onPressed: win.startSystemResize(modelData.edge)
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -475,17 +506,28 @@ ApplicationWindow {
                                     border.color: "#222"
                                 }
 
-                                // Loading pulse — animated shimmer while thumbnail hasn't loaded yet
+                                // Loading indicator — visible until thumbnail arrives
                                 Rectangle {
                                     anchors.fill: parent
                                     radius: 8
-                                    color: "#242638"
+                                    color: "#1a1a1f"
                                     visible: !thumbUrl || thumbUrl.length === 0
-                                    SequentialAnimation on opacity {
-                                        running: !thumbUrl || thumbUrl.length === 0
-                                        loops: Animation.Infinite
-                                        NumberAnimation { to: 0.35; duration: 900; easing.type: Easing.InOutSine }
-                                        NumberAnimation { to: 0.9;  duration: 900; easing.type: Easing.InOutSine }
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        color: "#666"
+                                        font.pointSize: 9
+                                        font.bold: true
+
+                                        property int dotCount: 0
+                                        text: "Loading" + Array(dotCount + 1).join(".")
+
+                                        Timer {
+                                            running: !thumbUrl || thumbUrl.length === 0
+                                            repeat: true
+                                            interval: 400
+                                            onTriggered: parent.dotCount = (parent.dotCount + 1) % 4
+                                        }
                                     }
                                 }
 
@@ -505,7 +547,9 @@ ApplicationWindow {
                                     id: thumb
                                     anchors.fill: parent
                                     fillMode: Image.PreserveAspectCrop
-                                    source: thumbUrl && thumbUrl.length ? thumbUrl : win.placeholderSource
+                                    // Only load a real URL — don't fall back to placeholder here;
+                                    // the pulse rectangle handles the "not loaded yet" state.
+                                    source: thumbUrl && thumbUrl.length ? thumbUrl : ""
                                     cache: true
                                     asynchronous: true
                                     smooth: true
@@ -525,6 +569,8 @@ ApplicationWindow {
                                     anchors.fill: thumb
                                     source: thumb
                                     maskSource: thumbMask
+                                    // Only render when we actually have a thumbnail
+                                    visible: thumbUrl && thumbUrl.length > 0
                                 }
 
                                 // Audio badge
